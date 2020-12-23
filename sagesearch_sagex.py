@@ -14,7 +14,6 @@ from fuzzywuzzy import process
 
 from tvmaze.api import Api
 
-
 import requests
 import json
 
@@ -71,7 +70,7 @@ for year in yearlist:
 		
 		dbFile = dbDirectory + justFileName + '.found';
 		if path.exists(dbFile):
-			print('skipping: ')
+			#print('skipping: ')
 			continue;
 		
 		result2 = re.search('(.*)-', justFileName)
@@ -85,7 +84,13 @@ for year in yearlist:
 		r = requests.get('http://192.168.1.4:8080/sagex/api?c=GetMediaFileForFilePath&1=' + name + '&encoder=json')
 		rawJson = r.json()
 		showName = rawJson['MediaFile']['MediaTitle']
-
+		showName = showName.replace(':', '')
+		
+		imdbid = 0;
+		if rawJson['MediaFile']['MediaFileMetadataProperties']:
+			if 'IMDBID' in rawJson['MediaFile']['MediaFileMetadataProperties']:
+				imdbid = rawJson['MediaFile']['MediaFileMetadataProperties']['IMDBID']
+				
 		
 		result = re.search(r"(?:s|season)(\d{2})(?:e|x|episode|\n)(\d{2})", name, re.I)
 		
@@ -94,20 +99,32 @@ for year in yearlist:
 			
 			if len(restOfFileName) <= 10:
 				# print(showName)
-				movies = ia.search_movie(showName)
-				if not movies:
-					continue
+				if imdbid==0:
+					movies = ia.search_movie(showName)
+					if not movies:
+						continue
+					curMovie = movies[0]
+				else:
+					shortID = imdbid[2:len(imdbid)]
 					
-				curMovie = movies[0]
-				if curMovie['kind'] == 'movie':
+					if not shortID:
+						continue
+					curMovie = ia.get_movie(shortID)
+									
+				
+				if curMovie['kind'] == 'movie' or curMovie['kind'] == 'tv movie':
 					year = str(curMovie['year'])
 					title = str(curMovie['title'])
+					title = title.replace(':', '')
+					
 					movieLink = movieLinkDirectory + title + ' (' + year + ')\\' + title + ' (' + year + ').ts'
+					
 					subprocess.call(['cmd', '/c', 'mkdir', movieLinkDirectory + title + ' (' + year + ')'])
 					subprocess.call(['cmd', '/c', 'mklink', movieLink, name])
 					found = 1;
 				else:
 					movieLink = movieLinkDirectory + showName + '\\' + showName + '.ts'
+					#print(movieLink)
 					subprocess.call(['cmd', '/c', 'mkdir', movieLinkDirectory + showName])
 					subprocess.call(['cmd', '/c', 'mklink', movieLink, name])
 					found = 1;
@@ -129,7 +146,7 @@ for year in yearlist:
 				season = str(res['season'])
 				episode = str(res['episode'])
 				linkName = linkDirectory + showName + '\\Season ' + season + '\\' + showName + ' S' + season + 'E' + episode + '.ts'
-				# print(linkName)
+				#print(linkName)
 				subprocess.call(['cmd', '/c', 'mkdir', linkDirectory + showName])
 				subprocess.call(['cmd', '/c', 'mkdir', linkDirectory + showName + '\\Season ' + season + '\\'])
 				subprocess.call(['cmd', '/c', 'mklink', linkName, name])
@@ -140,7 +157,7 @@ for year in yearlist:
 			episode = result.group(2)
 			if episode:
 				linkName = linkDirectory + showName + '\\Season ' + season + '\\' + showName + ' S' + season + 'E' + episode + '.ts'
-				# print(linkName)
+				#print(linkName)
 				subprocess.call(['cmd', '/c', 'mkdir', linkDirectory + showName])
 				subprocess.call(['cmd', '/c', 'mkdir', linkDirectory + showName + '\\Season ' + season + '\\'])
 				subprocess.call(['cmd', '/c', 'mklink', linkName, name])
