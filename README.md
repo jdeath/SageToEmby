@@ -9,7 +9,9 @@ Edit the directories to your liking. You need to create the top level directorie
 I like using symlinks because I still use Sage 99% of the time. I only use Emby/Kodi when on the road.
 
 You also have to:
+```
 pip install python-tvmaze
 pip install IMDbPY
 pip install fuzzywuzzy
 pip install fuzzywuzzy[speedup] # Optional, would not compile on my windows machine
+``
